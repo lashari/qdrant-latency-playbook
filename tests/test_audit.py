@@ -88,3 +88,22 @@ def test_findings_sorted_most_severe_first():
     info["status"] = "yellow"
     order = [f["level"] for f in audit(info, ram_gb=15, cpus=4)["findings"]]
     assert order == sorted(order, key={"high": 0, "medium": 1, "low": 2}.get)
+
+
+def test_live_wait_condition_matches_audit_threshold():
+    """The live test's wait must not demand indexing below indexing_threshold (it never happens)."""
+    import test_live_qdrant as live
+    audit = audit_mod
+
+    def info(points, indexed, dim=64, threshold=1000, status="green"):
+        return {"status": status, "points_count": points, "indexed_vectors_count": indexed,
+                "config": {"params": {"vectors": {"size": dim}},
+                           "optimizer_config": {"indexing_threshold": threshold}}}
+
+    # 3000 x 64 floats = 750 KB < 1000 KB threshold: never indexed, must count as settled.
+    assert live.settled(audit, info(3000, 0))
+    # Above the threshold, wait for indexing.
+    assert not live.settled(audit, info(20000, 0, dim=256))
+    assert live.settled(audit, info(20000, 19000, dim=256))
+    # Optimizer still busy.
+    assert not live.settled(audit, info(3000, 0, status="yellow"))
