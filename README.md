@@ -1,5 +1,7 @@
 # Qdrant Latency Playbook ⚡
 
+[![CI](https://github.com/lashari/qdrant-latency-playbook/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/lashari/qdrant-latency-playbook/actions/workflows/ci.yml)
+
 **How a production vector search went from 12–21 seconds to 0.07 seconds on the same
 15 GB server, what broke afterwards, and three small read-only tools that find the
 same problems on your own Qdrant.**
@@ -245,6 +247,16 @@ pip install pytest
 pytest -q                                          # unit tests, no Qdrant needed
 QDRANT_URL=http://localhost:6333 pytest -q         # also runs the tools against a live Qdrant
 ```
+
+**CI** ([workflow](.github/workflows/ci.yml)) runs on every push and pull request to `main`:
+
+- **Unit tests on Python 3.9 and 3.12**, with network access blocked
+  (`pytest-socket`), plus a line-coverage report in the job log and run summary.
+  3.9 is there because the tools are meant to run on a server's own `python3`.
+- **Live tests against real Qdrant v1.19 and v1.20** (as GitHub Actions service
+  containers): seed the "before" config, check the audit flags it, seed the tuned
+  config, check the audit passes and the probe runs. The job fails if the live test
+  is skipped instead of run.
 
 The audit tests use collection-info JSON captured from a real Qdrant 1.19. `host_check`
 is tested against a fake `/proc` + `/sys` tree, so it runs on any OS.
