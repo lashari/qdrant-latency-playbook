@@ -16,13 +16,18 @@ concurrency:
 jobs:
   unit:
     name: unit (Python ${{ matrix.python-version }})
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         # The tools are copied onto servers and run with the system python3,
         # so test an older interpreter as well as a current one.
-        python-version: ["3.9", "3.12"]
+        # Python 3.9 is not available on ubuntu-latest (26.04), so it runs on 24.04.
+        include:
+          - python-version: "3.9"
+            os: ubuntu-24.04
+          - python-version: "3.12"
+            os: ubuntu-latest
 
     steps:
       - name: Checkout repository
